@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:weightSum="20"
+    android:clipChildren="false"
+    android:background="@color/white"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_height="fill_parent"
+        android:background="@color/light"
+        android:layout_width="fill_parent"
+        android:layout_weight="3">
+        <ListView
+            android:id="@+id/in"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:stackFromBottom="true"
+            android:transcriptMode="alwaysScroll" />
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_weight="17"
+        android:weightSum="5"
+        android:paddingRight="20dp"
+        android:paddingLeft="20dp"
+        android:layout_marginBottom="12dp"
+        android:layout_marginTop="5dp"
+        android:layout_height="fill_parent">
+
+        <EditText
+            android:hint="Message"
+            android:id="@+id/edit_text_out"
+            android:layout_weight="5"
+            android:layout_width="fill_parent"
+            android:layout_gravity="bottom"
+            android:layout_height="wrap_content"/>
+
+        <ImageButton
+            android:id="@+id/button_send"
+            android:scaleType="fitXY"
+            android:background="@drawable/btsendblack"
+            android:layout_gravity="bottom"
+            android:layout_marginBottom="3dp"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content" />
+
+    </LinearLayout>
+
+</LinearLayout>

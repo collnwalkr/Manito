@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:weightSum="5"
+    android:clipChildren="false"
+    android:background="@color/white"
+    android:layout_height="match_parent">
+    <RelativeLayout
+        android:id="@+id/welcomeSplash"
+        android:background="@color/green"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="4">
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/button_wrapper"
+        android:layout_height="fill_parent"
+        android:layout_width="fill_parent"
+        android:gravity="bottom"
+        android:clipChildren="false"
+        android:layout_weight="1">
+    </RelativeLayout>
+
+</LinearLayout>

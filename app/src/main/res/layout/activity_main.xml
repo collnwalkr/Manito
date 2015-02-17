@@ -1,0 +1,79 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:paddingBottom="0dp"
+    android:paddingLeft="0dp"
+    android:paddingRight="0dp"
+    android:paddingTop="0dp"
+    tools:context="edu.gonzaga.textsecretary.MainActivity$PlaceholderFragment" >
+
+    <RelativeLayout
+        android:id="@+id/imageButtonFrame"
+        android:layout_width="fill_parent"
+        android:layout_height="120dp"
+        android:background="@color/white"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true">
+
+        <ImageButton
+            android:id="@+id/stateImage"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:background="@null"
+            android:src="@drawable/button_on"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="fill_parent"
+        android:layout_height="20dp"
+        android:layout_below="@id/imageButtonFrame"
+        android:background="@drawable/lowerbaron" >
+    </RelativeLayout>
+
+
+    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/scroll"
+        android:layout_width="fill_parent"
+        android:layout_below="@id/bottomBar"
+        android:layout_height="wrap_content" >
+        <LinearLayout
+            android:layout_height="fill_parent"
+            android:layout_width="fill_parent"
+            android:orientation="vertical">
+            <TextView
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:textColor="@color/dark"
+                android:textSize="90sp"
+                android:layout_marginTop="70dp"
+                android:layout_width="fill_parent"
+                android:text="hello"/>
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:textColor="@color/dark"
+                android:textSize="90sp"
+                android:layout_marginTop="70dp"
+                android:layout_width="fill_parent"
+                android:text="there"/>
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:textColor="@color/dark"
+                android:textSize="90sp"
+                android:layout_marginTop="70dp"
+                android:layout_width="fill_parent"
+                android:text="world"/>
+        </LinearLayout>
+    </ScrollView>
+
+</RelativeLayout>
