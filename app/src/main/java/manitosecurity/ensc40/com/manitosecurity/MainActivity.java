@@ -83,7 +83,7 @@ public class MainActivity extends Activity {
                 startActivity(settings);
                 return true;
             case R.id.developer_setting:
-                Intent developer = new Intent(getApplicationContext(), SetUpBlueTooth.class);
+                Intent developer = new Intent(getApplicationContext(), SetUp.class);
                 startActivity(developer);
                 return true;
             case R.id.wifi_detection:

@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -67,13 +66,6 @@ public class SetUpWifi extends Activity {
         mRefreshIcon = (ImageView) findViewById(R.id.refresh_icon);
         mRefreshIcon.setVisibility(View.INVISIBLE);
 
-
-        mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        mWifiNameList = new ArrayAdapter<String>(this,  R.layout.device_name);
-        mWifiList = new ArrayAdapter<ScanResult>(this,  R.layout.device_name);
-        mWifiListView.setAdapter(mWifiNameList);
-        mWifiListView.setOnItemClickListener(mDeviceClickListener);
-
         settings = PreferenceManager.getDefaultSharedPreferences(this);
         editor = settings.edit();
 
@@ -86,9 +78,8 @@ public class SetUpWifi extends Activity {
         setAnimationStart(slideUp, mRefreshIcon);
         setAnimationMiddle(spin, mRefreshIcon, false);
 
-
         Log.d(TAG, "got wifi manager");
-
+        setupUI();
         if (!mainWifi.isWifiEnabled())
         {
             // If wifi disabled then enable it
@@ -99,9 +90,8 @@ public class SetUpWifi extends Activity {
         }
         receiverWifi = new WifiReceiver();
         registerReceiver(receiverWifi, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-        mainWifi.startScan();
-        mainText.setText("Starting Scan...");
 
+        //mainWifi.startScan();
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -109,11 +99,6 @@ public class SetUpWifi extends Activity {
         return super.onCreateOptionsMenu(menu);
     }
 
-    public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        mainWifi.startScan();
-        mainText.setText("Starting Scan");
-        return super.onMenuItemSelected(featureId, item);
-    }
 
     protected void onPause() {
         super.onPause();
@@ -156,7 +141,6 @@ public class SetUpWifi extends Activity {
     // Broadcast receiver class called its receive method
     // when number of wifi connections changed
     class WifiReceiver extends BroadcastReceiver {
-
         // This method call when number of wifi connections changed
         public void onReceive(Context c, Intent intent) {
 
@@ -176,6 +160,10 @@ public class SetUpWifi extends Activity {
                 }
             }
 
+            mRefreshButton.setText("Scan for Networks");
+            mRefreshButton.setBackgroundColor(getResources().getColor(R.color.dark));
+            setAnimationMiddle(spin, mRefreshIcon, true);
+
             /*
             for(int i = 0; i < wifiList.size(); i++){
                 Log.d(TAG, "adding this:" + wifiList.get(i).toString());
@@ -187,10 +175,66 @@ public class SetUpWifi extends Activity {
             }
             */
 
-
-            mainText.setText(sb);
         }
 
+    }
+
+    /**
+     * Set up Refresh Button
+     */
+    private void setUpButton(Button b){
+        b.setText(R.string.scan);
+        b.setTextColor(getResources().getColor(R.color.white));
+        b.setBackgroundColor(getResources().getColor(R.color.dark));
+    }
+
+    /**
+     * Start device discover with the BluetoothAdapter
+     */
+    public void doWiFiDiscovery() {
+        Log.d(TAG, "doBTDiscovery()");
+
+        /* If we're already discovering, stop it
+        if (mainWifi.startScan()) {
+            mBluetoothAdapter.cancelDiscovery();
+        }
+        */
+
+        // Request discover from BluetoothAdapter
+        mainWifi.startScan();
+        setAnimationMiddle(spin, mRefreshIcon, false);
+        mRefreshIcon.startAnimation(slideUp);
+    }
+
+    private void setupUI() {
+        Log.d(TAG, "setupUI()");
+
+        //Get the list of BT devices
+        setUpButton(mRefreshButton);
+        mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        mWifiNameList = new ArrayAdapter<String>(this,  R.layout.device_name);
+        mWifiList = new ArrayAdapter<ScanResult>(this,  R.layout.device_name);
+        mWifiListView.setAdapter(mWifiNameList);
+        mWifiListView.setOnItemClickListener(mDeviceClickListener);
+
+        mRefreshButton.setText("Scanning...");
+        mRefreshButton.setBackgroundColor(getResources().getColor(R.color.medium));
+
+
+        // Initialize the send button with a listener that for click events
+        mRefreshButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                // Send a message using content of the edit text widget
+                View view = v.getRootView();
+                if (null != view) {
+                    doWiFiDiscovery();
+                    mRefreshButton.setText("Scanning...");
+                    mRefreshButton.setBackgroundColor(getResources().getColor(R.color.medium));
+                    Log.d(TAG, "refresh button pushed");
+                }
+            }
+        });
+        doWiFiDiscovery();
     }
 
     private void setAnimationStart(Animation anim, final ImageView v){

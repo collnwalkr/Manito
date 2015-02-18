@@ -18,7 +18,7 @@ public class BTChatService extends Service {
     private final IBinder mBinder = new LocalBinder();
     private static BTChatService mInstance = null;
     private static final String TAG = "BTCHATService";
-
+    private Intent mintent;
 
     public static BTChatService getInstance(){
         if(mInstance == null)
@@ -30,6 +30,10 @@ public class BTChatService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "BTChatService broadcast intent");
+        Intent mintent = new Intent(getApplicationContext(), SetUpBlueTooth.class);
+        mintent.setAction("manitosecurity.ensc40.GOT_BT");
+
         if(mChatService == null){
             mChatService = new BTChat(getApplicationContext(), mHandler);
         }
@@ -80,6 +84,8 @@ public class BTChatService extends Service {
                 case Constants.MESSAGE_STATE_CHANGE:
                     switch (msg.arg1) {
                         case BTChat.STATE_CONNECTED:
+                            Log.d(TAG, "SENDING BROADCAST");
+                            sendBroadcast(mintent);
                             break;
                         case BTChat.STATE_CONNECTING:
                             break;

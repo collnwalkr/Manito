@@ -206,6 +206,7 @@ public class BTChat {
         mHandler.sendMessage(msg);
 
         setState(STATE_CONNECTED);
+        Log.d(TAG, "CONNECTED");
     }
 
     /**

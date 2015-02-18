@@ -136,7 +136,9 @@ public final class SetUpBlueTooth extends Activity {
         setAnimationMiddle(spin, mRefreshIcon, false);
 
 
-        //manito_application = new ManitoApplication();
+        IntentFilter servicefilter = new IntentFilter("manitosecurity.ensc40.GOT_BT");
+        this.registerReceiver(new ReceiveBT(), servicefilter);
+
 
         // Register for broadcasts when a device is discovered
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -161,8 +163,8 @@ public final class SetUpBlueTooth extends Activity {
 
     private void bindService() {
         Log.d(TAG, "ABOUT TO BIND SERVICE");
-        bindService(new Intent(this, BTChatService.class), mConn, Context.BIND_AUTO_CREATE);
         startService(new Intent(this, BTChatService.class));
+        bindService(new Intent(this, BTChatService.class), mConn, Context.BIND_AUTO_CREATE);
         Log.d(TAG, "BOUND SERVICE");
     }
 
@@ -472,6 +474,7 @@ public final class SetUpBlueTooth extends Activity {
         // Attempt to connect to the device
         mService.mChatService.connect(device, secure);
     }
+
    /*
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -521,6 +524,22 @@ public final class SetUpBlueTooth extends Activity {
         mBluetoothAdapter.startDiscovery();
         setAnimationMiddle(spin, mRefreshIcon, false);
         mRefreshIcon.startAnimation(slideUp);
+    }
+
+
+    private void Finish(){
+        Log.d(TAG, "FINISHED");
+        Intent returnIntent = new Intent();
+        setResult(RESULT_OK, returnIntent);
+        finish();
+    }
+
+    private class ReceiveBT extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context arg0, Intent arg1) {
+            Log.d(TAG, "RECEIVED BROADCAST");
+            Finish();
+        }
     }
 
     /**

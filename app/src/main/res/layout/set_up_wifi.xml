@@ -17,7 +17,7 @@
         android:layout_weight="5">
         <TextView
             android:id="@+id/wifi_tv"
-            android:text="@string/scan"
+            android:text="@string/wifi_set_up"
             android:textColor="@color/white"
             android:textSize="30dp"
             android:padding="10dp"
