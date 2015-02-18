@@ -67,7 +67,6 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
@@ -86,6 +85,10 @@ public class MainActivity extends Activity {
             case R.id.developer_setting:
                 Intent developer = new Intent(getApplicationContext(), SetUpBlueTooth.class);
                 startActivity(developer);
+                return true;
+            case R.id.wifi_detection:
+                Intent wifi = new Intent(getApplicationContext(), SetUpWifi.class);
+                startActivity(wifi);
                 return true;
         }
         return super.onOptionsItemSelected(item);

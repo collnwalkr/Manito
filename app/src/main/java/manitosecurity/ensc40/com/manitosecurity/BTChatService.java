@@ -6,6 +6,7 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.util.Log;
 import android.widget.Toast;
 
 
@@ -16,6 +17,8 @@ public class BTChatService extends Service {
     public BTChat mChatService = null;
     private final IBinder mBinder = new LocalBinder();
     private static BTChatService mInstance = null;
+    private static final String TAG = "BTCHATService";
+
 
     public static BTChatService getInstance(){
         if(mInstance == null)
@@ -36,11 +39,13 @@ public class BTChatService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         //mHandler = ((ManitoApplication) getApplication()).getHandler();
+        Log.d(TAG, "BINDING");
         return mBinder;
     }
 
     public class LocalBinder extends Binder {
-        BTChatService getService() {
+        public BTChatService getService() {
+            Log.d(TAG, "GETSERVICE");
             return BTChatService.this;
         }
     }

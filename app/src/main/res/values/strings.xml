@@ -11,6 +11,8 @@
     <!--  Menu Items -->
     <string name="action_settings">Settings</string>
     <string name="developer_setting">Developer Mode</string>
+    <string name="wifi_detection">Wifi Detection</string>
+
 
     <!--  BluetoothChat -->
     <string name="send">Send</string>

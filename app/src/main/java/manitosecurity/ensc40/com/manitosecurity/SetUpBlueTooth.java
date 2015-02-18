@@ -95,10 +95,12 @@ public final class SetUpBlueTooth extends Activity {
 
     private ServiceConnection mConn = new ServiceConnection() {
         @Override
-        public void onServiceConnected(ComponentName className, IBinder binder) {
+        public void onServiceConnected(ComponentName className, IBinder service) {
             Log.d(TAG, "Connected to service.");
-            mService = ((BTChatService.LocalBinder) binder).getService();
+            BTChatService.LocalBinder binder = (BTChatService.LocalBinder)service;
+            mService = binder.getService();
             mServiceConnected = true;
+            beginSetUp();
         }
 
         @Override
@@ -136,7 +138,6 @@ public final class SetUpBlueTooth extends Activity {
 
         //manito_application = new ManitoApplication();
 
-
         // Register for broadcasts when a device is discovered
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         this.registerReceiver(mBTReceiver, filter);
@@ -152,68 +153,91 @@ public final class SetUpBlueTooth extends Activity {
             this.finish();
         }
 
-
+        // If BT is not on, request that it be enabled.
+        // setupChat() will then be called during onActivityResult
+        bindService();
 
     }
 
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        // If BT is not on, request that it be enabled.
-        // setupChat() will then be called during onActivityResult
+    private void bindService() {
         Log.d(TAG, "ABOUT TO BIND SERVICE");
         bindService(new Intent(this, BTChatService.class), mConn, Context.BIND_AUTO_CREATE);
         startService(new Intent(this, BTChatService.class));
         Log.d(TAG, "BOUND SERVICE");
+    }
 
+
+    public void beginSetUp(){
+        Log.d(TAG, "Beginning Set Up");
         if (!mBluetoothAdapter.isEnabled()) {
+            Log.d(TAG, "BEGIN SET UP -> !mBluetoothAdapter.isEnabled");
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
             // Otherwise, setup the chat session
-        } else if (mService.mChatService == null) {
+        } else {
+            Log.d(TAG, "BEGIN SET UP -> SET UP UI");
             setupUI();
+        }
+    }
+    @Override
+    public void onStart() {
+        super.onStart();
 
+        if(mServiceConnected) {
+            Log.d(TAG, "CONNECTED AND STARTING");
+            beginSetUp();
+        }
+        else{
+            Log.d(TAG, "NOT STARTED YET");
         }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        /*
         if (mService.mChatService != null) {
             mService.mChatService.stop();
             this.unregisterReceiver(mBTReceiver);
         }
+        */
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        Log.d(TAG, "RESUMING?");
 
-        // Performing this check in onResume() covers the case in which BT was
-        // not enabled during onStart(), so we were paused to enable it...
-        // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
-        if (mService.mChatService != null) {
-            // Only if the state is STATE_NONE, do we know that we haven't started already
-            if (mService.mChatService.getState() == BTChat.STATE_NONE) {
-                // Start the Bluetooth chat services
-                mService.mChatService.start();
+        if(mServiceConnected) {
+            Log.d(TAG, "STARTED WORKING IN RESUME");
+            // Performing this check in onResume() covers the case in which BT was
+            // not enabled during onStart(), so we were paused to enable it...
+            // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
+            if (mService.mChatService != null) {
+                // Only if the state is STATE_NONE, do we know that we haven't started already
+                if (mService.mChatService.getState() == BTChat.STATE_NONE) {
+                    // Start the Bluetooth chat services
+                    mService.mChatService.start();
+                }
             }
+            setupUI();
         }
-        setupUI();
-
+        else{
+            Log.d(TAG, "STILL NOT WORKING IN RESUME");
+            bindService();
+        }
     }
 
     @Override
-
     protected void onStop() {
         super.onStop();
-
+        /*
         if (mServiceConnected) {
             unbindService(mConn);
             stopService(new Intent(this, BTChatService.class));
             mServiceConnected = false;
         }
+        */
     }
 
     /**
@@ -539,6 +563,7 @@ public final class SetUpBlueTooth extends Activity {
             }
         }
     };
+
 
     private void setAnimationStart(Animation anim, final ImageView v){
         anim.setAnimationListener(new Animation.AnimationListener() {
