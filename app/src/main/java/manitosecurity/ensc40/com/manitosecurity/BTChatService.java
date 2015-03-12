@@ -42,7 +42,6 @@ public class BTChatService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        //mHandler = ((ManitoApplication) getApplication()).getHandler();
         Log.d(TAG, "BINDING");
         return mBinder;
     }

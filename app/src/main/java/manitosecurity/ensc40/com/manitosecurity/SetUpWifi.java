@@ -1,8 +1,10 @@
 package manitosecurity.ensc40.com.manitosecurity;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -10,6 +12,7 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -18,6 +21,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -52,6 +56,7 @@ public class SetUpWifi extends Activity {
     public static final String WEP = "WEP";
     public static final String WPA2 = "WPA2";
     public static final String OPEN = "Open";
+    private String m_password = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +88,7 @@ public class SetUpWifi extends Activity {
         if (!mainWifi.isWifiEnabled())
         {
             // If wifi disabled then enable it
-            Toast.makeText(getApplicationContext(), "wifi is disabled..making it enabled",
+            Toast.makeText(getApplicationContext(), "Wifi is disabled. Enabling Wifi",
                     Toast.LENGTH_LONG).show();
 
             mainWifi.setWifiEnabled(true);
@@ -117,11 +122,62 @@ public class SetUpWifi extends Activity {
             ScanResult wifiScan = mWifiList.getItem(position);
             Boolean isSecure = security(wifiScan.toString());
 
-            Toast.makeText(getApplicationContext(), wifiName + ": " + "Protected: " + isSecure, Toast.LENGTH_SHORT).show();
+            //Toast.makeText(getApplicationContext(), wifiName + ": " + "Protected: " + isSecure, Toast.LENGTH_SHORT).show();
+
             editor.putString("WiFiName", wifiName).commit();
             editor.putBoolean("WiFiProtected", isSecure).commit();
+
+            if(isSecure){
+                getWifiPassword();
+            }
+
+            else{
+                Finish();
+            }
+
         }
     };
+
+    private void Finish(){
+        Log.d(TAG, "FINISHED");
+        Intent returnIntent = new Intent();
+        setResult(RESULT_OK, returnIntent);
+        unregisterReceiver(receiverWifi);
+        finish();
+    }
+
+    public void getWifiPassword(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Please enter Wifi password so that Manito can connect to your home network.");
+        builder.setTitle("Wifi Password");
+
+        // Set up the input
+        final EditText input = new EditText(this);
+        // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(input);
+
+        // Set up the buttons
+        builder.setPositiveButton("Submit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                m_password = input.getText().toString();
+                editor.putString("WiFiPassword", m_password).commit();
+                Log.d(TAG, "Saved password: " + m_password);
+
+                Finish();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
 
     public Boolean security(String cap){
         if (cap.toLowerCase().contains(WEP.toLowerCase())){

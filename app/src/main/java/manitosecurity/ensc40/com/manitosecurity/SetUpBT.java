@@ -26,9 +26,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
@@ -48,6 +50,9 @@ import android.widget.Toast;
 public final class SetUpBT extends Activity {
 
     private static final String TAG = "SetUpBT";
+    private String WifiName = "";
+    private String WifiPW = "";
+    private boolean WifiSecure = false;
 
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
@@ -63,6 +68,11 @@ public final class SetUpBT extends Activity {
 
     // Notification Handler
     Notification_Service mNotification;
+
+    // Shared Preferences
+    private SharedPreferences settings;
+
+
 
     /**
      * Name of the connected device
@@ -109,6 +119,7 @@ public final class SetUpBT extends Activity {
         setAnimationMiddle(spin, mRefreshIcon, false);
 
 
+        settings = PreferenceManager.getDefaultSharedPreferences(this);
 
 
         // Register for broadcasts when a device is discovered
@@ -310,6 +321,8 @@ public final class SetUpBT extends Activity {
                     switch (msg.arg1) {
                         case BTChat.STATE_CONNECTED:
                             setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
+                            Log.d(TAG, "CONNECTED!!! <3");
+                            SendWifiCred();
                             break;
                         case BTChat.STATE_CONNECTING:
                             setStatus(R.string.title_connecting);
@@ -345,13 +358,36 @@ public final class SetUpBT extends Activity {
                     break;
                 case Constants.MESSAGE_TOAST:
                     if (null != this) {
-                        Toast.makeText(getApplicationContext(), msg.getData().getString(Constants.TOAST),
-                                Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(getApplicationContext(), msg.getData().getString(Constants.TOAST),
+                        //        Toast.LENGTH_SHORT).show();
                     }
                     break;
             }
         }
     };
+
+    private void SendWifiCred(){
+        WifiName = settings.getString("WiFiName", "");
+        WifiPW = settings.getString("WiFiPassword", "");
+        WifiSecure = settings.getBoolean("WiFiProtected", false);
+        Log.d(TAG, "SENDING: " + WifiName + WifiPW + WifiSecure);
+
+        sendMessage(WifiName+"#");
+        Log.d(TAG, "SENDING: " + WifiName + "#");
+
+        if(WifiSecure){ sendMessage(WifiPW+"#"); Log.d(TAG, "SENDING: " + WifiPW + "#");
+        }
+
+        Log.d(TAG, "SENT!!");
+        Finish();
+    }
+
+    private void Finish(){
+        Log.d(TAG, "FINISHED");
+        Intent returnIntent = new Intent();
+        setResult(RESULT_OK, returnIntent);
+        finish();
+    }
 
 
     /*

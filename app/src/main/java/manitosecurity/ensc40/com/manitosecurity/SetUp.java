@@ -6,11 +6,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 
 public class SetUp extends Activity {
     private Intent set_up_bt = null;
     private Intent set_up_wifi = null;
+    private Intent main_activity = null;
     static final int GET_BT = 1;
     static final int GET_WIFI = 2;
     private String TAG = "SETUP";
@@ -24,32 +26,36 @@ public class SetUp extends Activity {
         setContentView(R.layout.activity_set_up);
         set_up_bt = new Intent(getApplicationContext(), SetUpBT.class);
         set_up_wifi = new Intent(getApplicationContext(), SetUpWifi.class);
+        main_activity = new Intent(getApplicationContext(), MainActivity.class);
 
         getBTandWIFI();
     }
 
     private void getBTandWIFI(){
         Log.d(TAG, "getBTandWIFI");
-        startActivityForResult(set_up_bt, GET_BT);
+        startActivityForResult(set_up_wifi, GET_WIFI);
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         if (requestCode == GET_BT) {
             if(resultCode == RESULT_OK){
-                startActivityForResult(set_up_wifi, GET_WIFI);
+                startActivity(main_activity);
             }
             if (resultCode == RESULT_CANCELED) {
-                //Write your code if there's no result
-            }
+                Toast.makeText(getApplicationContext(), "Unable to connect to BlueTooth", Toast.LENGTH_SHORT).show();
+                Intent return_intent = new Intent(this, SetUpWifi.class);
+                startActivity(return_intent);            }
         }
 
         if (requestCode == GET_WIFI) {
             if(resultCode == RESULT_OK){
-                startActivityForResult(set_up_wifi, GET_WIFI);
+                startActivityForResult(set_up_bt, GET_BT);
             }
             if (resultCode == RESULT_CANCELED) {
-                //Write your code if there's no result
+                Toast.makeText(getApplicationContext(), "Unable to connect to Wifi", Toast.LENGTH_SHORT).show();
+                Intent return_intent = new Intent(this, WelcomeScreen.class);
+                startActivity(return_intent);
             }
         }
     }//onActivityResult

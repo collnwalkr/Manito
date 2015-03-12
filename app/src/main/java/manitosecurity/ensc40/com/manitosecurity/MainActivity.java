@@ -79,11 +79,11 @@ public class MainActivity extends Activity {
         // as you specify a parent activity in AndroidManifest.xml.
         switch (item.getItemId()) {
             case R.id.action_settings:
-                Intent settings = new Intent(getApplicationContext(), SetUpBT.class);
+                Intent settings = new Intent(getApplicationContext(), SetUp.class);
                 startActivity(settings);
                 return true;
             case R.id.developer_setting:
-                Intent developer = new Intent(getApplicationContext(), SetUp.class);
+                Intent developer = new Intent(getApplicationContext(), DeveloperChat.class);
                 startActivity(developer);
                 return true;
             case R.id.wifi_detection:

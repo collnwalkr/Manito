@@ -54,6 +54,16 @@
             android:name=".SetUp"
             android:label="@string/title_activity_set_up" >
         </activity>
+
+        <receiver
+            android:name=".CheckWifiPassword"
+            android:enabled="true"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+                <action android:name="android.net.wifi.STATE_CHANGE"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
