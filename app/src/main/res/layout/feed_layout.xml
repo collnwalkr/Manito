@@ -77,7 +77,7 @@
             android:id="@+id/contact_armed">
             <ImageView
                 android:id="@+id/contact_armed_picture"
-                android:src="@drawable/armed_off"
+                android:src="@drawable/armed_on"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
@@ -89,7 +89,7 @@
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_toRightOf="@id/contact_armed_picture"
-                android:text="Disarmed"/>
+                android:text="//////"/>
         </RelativeLayout>
 
         <RelativeLayout

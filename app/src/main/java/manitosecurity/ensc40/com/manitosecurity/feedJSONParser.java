@@ -19,20 +19,20 @@ public class feedJSONParser {
     String TAG = "feedJSONParser";
 
     // Receives a JSONObject and returns a list
-    public List<HashMap<String, Object>> parse(JSONArray jArray) {
-        /*
+    public List<HashMap<String, Object>> parse(JSONObject jObject) {
+
         JSONArray jEvents = null;
         try {
-            jEvents = new JSONArray(jEvents);
+            jEvents = jObject.getJSONArray("events");
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        */
-        Log.d(TAG, "parse, about to return " + jArray.toString());
+
+        Log.d(TAG, "parse, about to return " + jObject.toString());
 
         // Invoking getEvent with the array of json object
         // where each json object represent a event
-        return getEvents(jArray);
+        return getEvents(jEvents);
     }
 
     private List<HashMap<String, Object>> getEvents(JSONArray jEvents) {
@@ -64,18 +64,32 @@ public class feedJSONParser {
 
 
         HashMap<String, Object> event = new HashMap<String, Object>();
-        String m_name = "";
-        String m_time = "";
-        Boolean m_arm  = false;
-        String m_home = "";
-        Boolean m_alert = false;
+        String  m_name  = "";
+        String  m_time  = "";
+        String  b_arm   = "";
+        String  m_arm   = "";
+        String  m_home  = "";
+        String  b_alert = "";
+        String  m_alert = "";
 
         try {
             //m_name = jEvent.getString("name");
             m_time   = jEvent.getString("timestamp");
-            m_arm    = jEvent.getBoolean("armed");
+            m_time = m_time.substring(11, 19);
+            b_arm    = jEvent.getString("armed");
+            Log.d(TAG, "b_arm: " + b_arm);
+            if(b_arm.equals("T")){
+                m_arm = "Armed";
+            } else{
+                m_arm = "Disarmed";
+            }
             //m_home = jEvent.getString("home");
-            m_alert  = jEvent.getBoolean("alert");
+            b_alert  = jEvent.getString("alert");
+            if(b_alert.equals("T")){
+                m_alert = "Armed";
+            } else{
+                m_alert = "Disarmed";
+            }
 
             //event.put("name", m_name);
             event.put("timestamp", m_time);

@@ -17,7 +17,7 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
 
-import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -188,7 +188,7 @@ public class MainActivity extends Activity {
             iStream.close();
         }
 
-        return data;
+        return "{\"events\":" + data + "}";
     }
 
     /** AsyncTask to download json data*/
@@ -220,14 +220,15 @@ public class MainActivity extends Activity {
     /** AsyncTask to parse json data and load ListView*/
     private class ListViewLoaderTask extends AsyncTask<String, Void, SimpleAdapter>{
 
-        JSONArray jArray = null;
+        JSONObject jObject = null;
         // Doing the parsing of xml data in a non-ui thread
         @Override
         protected SimpleAdapter doInBackground(String... strJson) {
             try{
-                jArray = new JSONArray(strJson);
+                jObject = new JSONObject(strJson[0]);
+                Log.d(TAG, "made the jObject");
                 feedJSONParser eventJsonParser = new feedJSONParser();
-                eventJsonParser.parse(jArray);
+                eventJsonParser.parse(jObject);
             }catch(Exception e){
                 Log.d("JSON Exception1",e.toString());
             }
@@ -240,7 +241,7 @@ public class MainActivity extends Activity {
 
             try{
                 // Getting the parsed data as a List construct
-                events = eventJsonParser.parse(jArray);
+                events = eventJsonParser.parse(jObject);
             }catch(Exception e){
                 Log.d("Exception",e.toString());
             }
