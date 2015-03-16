@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:layout_marginTop="20dp" android:layout_marginBottom="5dp"
+    android:layout_centerHorizontal="true">
+
+    <ImageView
+        android:id="@+id/contact_picture"
+        android:src="@drawable/default_contact"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:padding="5dp"
+        android:layout_marginRight="15dp"/>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/left_column"
+        android:minWidth="100dp"
+        android:layout_toRightOf="@id/contact_picture">
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/contact_home">
+            <ImageView
+                android:id="@+id/contact_home_picture"
+                android:src="@drawable/home_on"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:padding="5dp"/>
+
+            <TextView
+                android:id="@+id/contact_home_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@id/contact_home_picture"
+                android:text="Home"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="100dp"
+            android:id="@+id/contact_name"
+            android:layout_below="@id/contact_home">
+            <ImageView
+                android:id="@+id/contact_name_picture"
+                android:src="@drawable/name_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:padding="5dp"/>
+            <TextView
+                android:id="@+id/contact_name_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:maxLength="11"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:layout_toRightOf="@id/contact_name_picture"
+                android:text="Collin"/>
+        </RelativeLayout>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/right_column"
+        android:layout_toRightOf="@id/left_column">
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/contact_armed">
+            <ImageView
+                android:id="@+id/contact_armed_picture"
+                android:src="@drawable/armed_off"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:padding="5dp"/>
+
+            <TextView
+                android:id="@+id/contact_armed_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@id/contact_armed_picture"
+                android:text="Disarmed"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="100dp"
+            android:id="@+id/contact_time"
+            android:layout_below="@id/contact_armed">
+            <ImageView
+                android:id="@+id/contact_time_picture"
+                android:src="@drawable/time_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:padding="5dp"/>
+            <TextView
+                android:id="@+id/contact_time_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@id/contact_time_picture"
+                android:text="12:30 pm"/>
+        </RelativeLayout>
+    </RelativeLayout>
+</RelativeLayout>

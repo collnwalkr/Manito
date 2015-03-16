@@ -3,19 +3,35 @@ package manitosecurity.ensc40.com.manitosecurity;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.Toast;
+
+import org.json.JSONArray;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
 
 public class MainActivity extends Activity {
 
     private ImageButton imageState;
+    private ListView mListView;
     private SharedPreferences settings;
     SharedPreferences.Editor editor;
     String TAG = "MAINTAG";
@@ -57,6 +73,18 @@ public class MainActivity extends Activity {
         mChatService = new BTChat(this, mHandler);
         mOutStringBuffer = new StringBuffer("");
         setUpUI();
+
+        //String strUrl = "http://wptrafficanalyzer.in/p/demo1/first.php/countries/";
+        String strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
+
+
+        // Creating a new non-ui thread task to download json data
+        DownloadTask downloadTask = new DownloadTask();
+
+        // Starting the download process
+        downloadTask.execute(strUrl);
+
+        mListView = (ListView) findViewById(R.id.lv_events);
     }
 
     @Override
@@ -124,6 +152,136 @@ public class MainActivity extends Activity {
             }
         });
     }
+
+    /** A method to download json data from url */
+    private String downloadUrl(String strUrl) throws IOException {
+        String data = "";
+        InputStream iStream = null;
+        try{
+            URL url = new URL(strUrl);
+
+            // Creating an http connection to communicate with url
+            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+            // Connecting to url
+            urlConnection.connect();
+
+            // Reading data from url
+            iStream = urlConnection.getInputStream();
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
+
+            StringBuffer sb  = new StringBuffer();
+
+            String line = "";
+            while( ( line = br.readLine())  != null){
+                sb.append(line);
+            }
+
+            data = sb.toString();
+
+            br.close();
+
+        }catch(Exception e){
+            Log.d("Exception while downloading url", e.toString());
+        }finally{
+            iStream.close();
+        }
+
+        return data;
+    }
+
+    /** AsyncTask to download json data*/
+    private class DownloadTask extends AsyncTask<String, Integer, String> {
+        String data = null;
+        @Override
+        protected String doInBackground(String... url) {
+            try{
+                data = downloadUrl(url[0]);
+            }catch(Exception e){
+                Log.d("Background Task", e.toString());
+            }
+            return data;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            Log.d(TAG, "FINISHED DOWNLOADING");
+
+            // The parsing of the xml data is done in a non-ui thread
+            ListViewLoaderTask listViewLoaderTask = new ListViewLoaderTask();
+
+            // Start parsing xml data
+            listViewLoaderTask.execute(result);
+        }
+    }
+
+
+    /** AsyncTask to parse json data and load ListView*/
+    private class ListViewLoaderTask extends AsyncTask<String, Void, SimpleAdapter>{
+
+        JSONArray jArray = null;
+        // Doing the parsing of xml data in a non-ui thread
+        @Override
+        protected SimpleAdapter doInBackground(String... strJson) {
+            try{
+                jArray = new JSONArray(strJson);
+                feedJSONParser eventJsonParser = new feedJSONParser();
+                eventJsonParser.parse(jArray);
+            }catch(Exception e){
+                Log.d("JSON Exception1",e.toString());
+            }
+
+            // Instantiating json parser class
+            feedJSONParser eventJsonParser = new feedJSONParser();
+
+            // A list object to store the parsed events list
+            List<HashMap<String, Object>> events = null;
+
+            try{
+                // Getting the parsed data as a List construct
+                events = eventJsonParser.parse(jArray);
+            }catch(Exception e){
+                Log.d("Exception",e.toString());
+            }
+
+            // Keys used in Hashmap
+            //String[] from = { "name","timestamp","armed", "home", "alert"};
+            String[] from = { "timestamp","armed"};
+
+            // Ids of views in listview_layout
+            //int[] to = { R.id.contact_name_text, R.id.contact_time_text, R.id.contact_armed_text, R.id.contact_home_text};
+            int[] to = { R.id.contact_time_text, R.id.contact_armed_text};
+
+            // Instantiating an adapter to store each items
+            // R.layout.listview_layout defines the layout of each item
+            SimpleAdapter adapter = new SimpleAdapter(getBaseContext(), events, R.layout.feed_layout, from, to);
+
+            return adapter;
+        }
+
+        /** Invoked by the Android on "doInBackground" is executed*/
+        @Override
+        protected void onPostExecute(SimpleAdapter adapter) {
+
+            // Setting adapter for the listview
+            mListView.setAdapter(adapter);
+
+            for(int i=0;i<adapter.getCount();i++){
+                HashMap<String, Object> hm = (HashMap<String, Object>) adapter.getItem(i);
+                String imgUrl = (String) hm.get("flag_path");
+                //ImageLoaderTask imageLoaderTask = new ImageLoaderTask();
+
+                HashMap<String, Object> hmDownload = new HashMap<String, Object>();
+                hm.put("flag_path",imgUrl);
+                hm.put("position", i);
+
+                // Starting ImageLoaderTask to download and populate image in the listview
+                //imageLoaderTask.execute(hm);
+            }
+        }
+    }
+
 
     @Override
     public void onBackPressed() {
