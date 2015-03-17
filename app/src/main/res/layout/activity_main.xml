@@ -29,20 +29,43 @@
 
     </RelativeLayout>
 
-    <RelativeLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="fill_parent"
-        android:layout_height="20dp"
+    <Button
+        android:id="@+id/refresh_button"
+        android:layout_height="45dp"
         android:layout_below="@id/imageButtonFrame"
-        android:background="@drawable/lowerbaron" >
-    </RelativeLayout>
+        android:layout_width="match_parent"
+        android:layout_margin="0dp"/>
 
 
     <ListView
         android:id="@+id/lv_events"
+        android:paddingTop="15dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/bottomBar"
-        tools:context=".MainActivity" />
+        android:layout_below="@id/refresh_button"
+        android:clipToPadding="false"
+        android:divider="@color/white"
+        tools:context=".MainActivity"
+        android:dividerHeight="15dp"/>
+
+    <ImageView
+        android:id="@+id/empty_graphic"
+        android:src="@drawable/empty_feed"
+        android:layout_centerHorizontal="true"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:layout_below="@id/refresh_button"
+        android:clipToPadding="false"
+        android:divider="@color/white"
+        tools:context=".MainActivity"
+        android:dividerHeight="15dp"/>
+
+    <ImageView
+        android:id="@+id/refresh_icon"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_centerVertical="true"
+        android:background="@drawable/refresh"
+        android:layout_centerHorizontal="true"/>
 
 </RelativeLayout>

@@ -12,7 +12,11 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
@@ -31,25 +35,17 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     private ImageButton imageState;
+    private ImageView emptyFeed;
     private ListView mListView;
     private SharedPreferences settings;
-    SharedPreferences.Editor editor;
-    String TAG = "MAINTAG";
+    private Animation slideUp, spin, slideDown;
+    private ImageView mRefreshIcon;
+    private Button mRefreshButton;
+    private DownloadTask downloadTask = new DownloadTask();
 
-    Handler.Callback realCallback = null;
-    Handler handler = new Handler() {
-        public void handleMessage(android.os.Message msg) {
-            if (realCallback != null) {
-                realCallback.handleMessage(msg);
-            }
-        };
-    };
-    public Handler getHandler() {
-        return handler;
-    }
-    public void setCallBack(Handler.Callback callback) {
-        this.realCallback = callback;
-    }
+    SharedPreferences.Editor editor;
+    String strUrl = "";
+    String TAG = "MAINTAG";
 
     /**
      * Member object for the chat services
@@ -72,19 +68,23 @@ public class MainActivity extends Activity {
         //if(!settings.getBoolean("setUp", false)) {setUpFinished();}
         mChatService = new BTChat(this, mHandler);
         mOutStringBuffer = new StringBuffer("");
+
         setUpUI();
 
-        //String strUrl = "http://wptrafficanalyzer.in/p/demo1/first.php/countries/";
-        String strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
+
+        //strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
+        strUrl = "https://data.sparkfun.com/output/YGbWzd9amwuzd1KwJjDK.json";
 
 
         // Creating a new non-ui thread task to download json data
-        DownloadTask downloadTask = new DownloadTask();
+
+        mRefreshButton.setText(R.string.refreshing);
+        mRefreshButton.setBackgroundColor(getResources().getColor(R.color.orange));
+        setAnimationMiddle(spin, mRefreshIcon, false);
+        mRefreshIcon.startAnimation(slideUp);
 
         // Starting the download process
         downloadTask.execute(strUrl);
-
-        mListView = (ListView) findViewById(R.id.lv_events);
     }
 
     @Override
@@ -127,8 +127,16 @@ public class MainActivity extends Activity {
     }
 
     private void setUpUI(){
+        Log.d(TAG, "setting up ui");
+        mListView = (ListView) findViewById(R.id.lv_events);
+        emptyFeed = (ImageView) findViewById(R.id.empty_graphic);
+        emptyFeed.setVisibility(View.INVISIBLE);
         imageState = (ImageButton) findViewById(R.id.stateImage);
+        mRefreshButton = (Button) findViewById(R.id.refresh_button);
+        mRefreshIcon = (ImageView) findViewById(R.id.refresh_icon);
+        mRefreshIcon.setVisibility(View.INVISIBLE);
 
+        setUpButton(mRefreshButton);
 
         if (!settings.getBoolean("armState", false)){		//if setting is off, button should be off
             imageState.setImageResource(R.drawable.button_off);
@@ -151,6 +159,33 @@ public class MainActivity extends Activity {
                 }
             }
         });
+
+        mRefreshButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                // Send a message using content of the edit text widget
+                View view = v.getRootView();
+                if (null != view) {
+                    Log.d(TAG, "refresh button pushed " + strUrl);
+                    mRefreshButton.setText(R.string.refreshing);
+                    mRefreshButton.setBackgroundColor(getResources().getColor(R.color.orange));
+                    setAnimationMiddle(spin, mRefreshIcon, false);
+                    mRefreshIcon.startAnimation(slideUp);
+                    downloadTask = new DownloadTask();
+                    strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
+                    downloadTask.execute(strUrl);
+                }
+            }
+        });
+
+        //Set up animation
+        slideUp     = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_up);
+        slideDown   = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_down);
+        spin        = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.spin);
+        setAnimationEnd(slideDown, mRefreshIcon);
+        setAnimationStart(slideUp, mRefreshIcon);
+        setAnimationMiddle(spin, mRefreshIcon, false);
+
+        Log.d(TAG, "set up ui");
     }
 
     /** A method to download json data from url */
@@ -184,6 +219,7 @@ public class MainActivity extends Activity {
 
         }catch(Exception e){
             Log.d("Exception while downloading url", e.toString());
+            return "";
         }finally{
             iStream.close();
         }
@@ -208,11 +244,24 @@ public class MainActivity extends Activity {
         protected void onPostExecute(String result) {
             Log.d(TAG, "FINISHED DOWNLOADING");
 
-            // The parsing of the xml data is done in a non-ui thread
-            ListViewLoaderTask listViewLoaderTask = new ListViewLoaderTask();
+            if(result == null){
+                Log.d(TAG, "EMPTY FEED");
+                emptyFeed.setVisibility(View.VISIBLE);
+                mListView.setVisibility(View.INVISIBLE);
+            }
+            else{
+                emptyFeed.setVisibility(View.INVISIBLE);
+                mListView.setVisibility(View.VISIBLE);
 
-            // Start parsing xml data
-            listViewLoaderTask.execute(result);
+                // The parsing of the xml data is done in a non-ui thread
+                ListViewLoaderTask listViewLoaderTask = new ListViewLoaderTask();
+
+                // Start parsing xml data
+                listViewLoaderTask.execute(result);
+            }
+
+
+            setAnimationMiddle(spin, mRefreshIcon, true);
         }
     }
 
@@ -248,15 +297,17 @@ public class MainActivity extends Activity {
 
             // Keys used in Hashmap
             //String[] from = { "name","timestamp","armed", "home", "alert"};
-            String[] from = { "timestamp","armed"};
+            String[] from = { "timestamp","armed", "armed_img", "date", "separate"};
 
             // Ids of views in listview_layout
             //int[] to = { R.id.contact_name_text, R.id.contact_time_text, R.id.contact_armed_text, R.id.contact_home_text};
-            int[] to = { R.id.contact_time_text, R.id.contact_armed_text};
+            int[] to = { R.id.contact_time_text, R.id.contact_armed_text, R.id.contact_armed_picture, R.id.date};
 
             // Instantiating an adapter to store each items
             // R.layout.listview_layout defines the layout of each item
             SimpleAdapter adapter = new SimpleAdapter(getBaseContext(), events, R.layout.feed_layout, from, to);
+
+
 
             return adapter;
         }
@@ -271,14 +322,7 @@ public class MainActivity extends Activity {
             for(int i=0;i<adapter.getCount();i++){
                 HashMap<String, Object> hm = (HashMap<String, Object>) adapter.getItem(i);
                 String imgUrl = (String) hm.get("flag_path");
-                //ImageLoaderTask imageLoaderTask = new ImageLoaderTask();
 
-                HashMap<String, Object> hmDownload = new HashMap<String, Object>();
-                hm.put("flag_path",imgUrl);
-                hm.put("position", i);
-
-                // Starting ImageLoaderTask to download and populate image in the listview
-                //imageLoaderTask.execute(hm);
             }
         }
     }
@@ -337,6 +381,66 @@ public class MainActivity extends Activity {
             // Reset out string buffer to zero and clear the edit text field
             mOutStringBuffer.setLength(0);
         }
+    }
+
+    /**
+     * Set up Refresh Button
+     */
+    private void setUpButton(Button b){
+        b.setText(R.string.refresh);
+        b.setTextColor(getResources().getColor(R.color.white));
+        b.setBackgroundColor(getResources().getColor(R.color.green));
+    }
+
+
+    private void setAnimationStart(Animation anim, final ImageView v){
+        anim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                v.setVisibility(View.VISIBLE);
+            }
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                v.startAnimation(spin);
+            }
+
+
+        });
+    }
+    //Repeat animation, then slide down if done
+    private void setAnimationMiddle(Animation anim, final ImageView v, final boolean finished){
+        anim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+            @Override
+            public void onAnimationStart(Animation animation) {}
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                if(finished){
+                    v.getAnimation().cancel();
+                    v.startAnimation(slideDown);
+                }
+                else
+                    v.startAnimation(spin);
+            }
+
+        });
+    }
+
+    private void setAnimationEnd(Animation anim, final ImageView v){
+        anim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {}
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                v.setVisibility(View.INVISIBLE);
+                setUpButton(mRefreshButton);
+            }
+        });
     }
 
 }

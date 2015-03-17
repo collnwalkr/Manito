@@ -28,7 +28,7 @@ public class feedJSONParser {
             e.printStackTrace();
         }
 
-        Log.d(TAG, "parse, about to return " + jObject.toString());
+        //Log.d(TAG, "parse, about to return " + jObject.toString());
 
         // Invoking getEvent with the array of json object
         // where each json object represent a event
@@ -40,7 +40,7 @@ public class feedJSONParser {
         List<HashMap<String, Object>> eventList = new ArrayList<HashMap<String, Object>>();
         HashMap<String, Object> event = null;
 
-        Log.d(TAG, "in getEvents");
+        //Log.d(TAG, "in getEvents");
 
         // Taking each event, parses and adds to list object
         for (int i = 0; i < eventCount; i++) {
@@ -48,7 +48,7 @@ public class feedJSONParser {
                 // Call getEvent with event JSON object to parse the event
                 event = getEvent((JSONObject) jEvents.get(i));
                 eventList.add(event);
-                Log.d(TAG, "adding event");
+                //Log.d(TAG, "adding event");
             } catch (JSONException e) {
                 Log.d(TAG, "in exception for hashmap");
                 e.printStackTrace();
@@ -60,28 +60,43 @@ public class feedJSONParser {
 
     // Parsing the Event JSON object
     private HashMap<String, Object> getEvent(JSONObject jEvent) {
-        Log.d(TAG, "getEvent");
+        //Log.d(TAG, "getEvent");
 
 
         HashMap<String, Object> event = new HashMap<String, Object>();
         String  m_name  = "";
+        String  m_time_stamp  = "";
         String  m_time  = "";
         String  b_arm   = "";
         String  m_arm   = "";
         String  m_home  = "";
         String  b_alert = "";
         String  m_alert = "";
+        String  d_arm   = null;
+        String  m_date  = "";
+        Boolean separate = false;
+        String  m_lastDate = "";
 
         try {
             //m_name = jEvent.getString("name");
-            m_time   = jEvent.getString("timestamp");
-            m_time = m_time.substring(11, 19);
+            m_time_stamp   = jEvent.getString("timestamp");
+            m_time         = m_time_stamp.substring(11, 19);
+            m_date         = m_time_stamp.substring(0, 10);
+
+            if(m_lastDate == m_date){
+                separate = false;
+            }
+            else{
+                separate = true;
+            }
+
             b_arm    = jEvent.getString("armed");
-            Log.d(TAG, "b_arm: " + b_arm);
             if(b_arm.equals("T")){
                 m_arm = "Armed";
+                d_arm = String.valueOf(R.drawable.armed_on);
             } else{
                 m_arm = "Disarmed";
+                d_arm = String.valueOf(R.drawable.armed_off);
             }
             //m_home = jEvent.getString("home");
             b_alert  = jEvent.getString("alert");
@@ -96,11 +111,14 @@ public class feedJSONParser {
             event.put("armed", m_arm);
             //event.put("home", m_home);
             event.put("alert", m_alert);
+            event.put("armed_img", d_arm);
+            event.put("date", m_date);
+            event.put("separate", separate);
 
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        Log.d(TAG, "getEvent about to return");
+        //Log.d(TAG, "getEvent about to return");
 
         return event;
     }

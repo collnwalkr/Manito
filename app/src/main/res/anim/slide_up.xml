@@ -3,7 +3,7 @@
 <set xmlns:android="http://schemas.android.com/apk/res/android">
     <translate
         android:fromXDelta="0"
-        android:fromYDelta="1000"
+        android:fromYDelta="2000"
         android:toYDelta="-20"
         android:duration="700"
         android:interpolator="@android:anim/decelerate_interpolator"
