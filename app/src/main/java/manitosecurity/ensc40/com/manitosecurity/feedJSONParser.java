@@ -9,6 +9,8 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Collin on 3/15/2015.
@@ -126,7 +128,30 @@ public class feedJSONParser {
         StringBuilder time_finished = new StringBuilder();
         String s_hours = time.substring(0, 2);
 
+        TimeZone tZone = TimeZone.getDefault();
+
+        long daylightSaving = tZone.getDSTSavings();
+        daylightSaving = TimeUnit.HOURS.convert(daylightSaving, TimeUnit.MILLISECONDS);
+
+        long offset = tZone.getRawOffset();
+        Log.d(TAG, "" + offset);
+        Log.d(TAG, "" + TimeUnit.HOURS.convert(offset, TimeUnit.MILLISECONDS));
+        offset = TimeUnit.HOURS.convert(offset, TimeUnit.MILLISECONDS);
+
         int i_hours = Integer.parseInt(s_hours);
+
+        i_hours += offset;
+        i_hours += daylightSaving;
+
+        Log.d(TAG, "Final i_hours:" + i_hours);
+
+        if(i_hours <= 0){
+            i_hours += 24;
+        }
+
+        if(i_hours >= 24){
+            i_hours -= 24;
+        }
 
         if(i_hours > 12){
             i_hours -= 12;
@@ -140,6 +165,8 @@ public class feedJSONParser {
             time_finished.append(time);
             time_finished.append(" am");
         }
+
+        Log.d(TAG, "Final Time:" + time_finished.toString());
 
         return time_finished.toString();
     }

@@ -14,7 +14,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
@@ -33,11 +32,12 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     private ImageButton imageState;
-    private ImageView emptyFeed;
+    private ImageButton emptyFeed;
     private ListView mListView;
     private SharedPreferences settings;
     private SwipeRefreshLayout swipeLayout;
     private DownloadTask downloadTask = new DownloadTask();
+    private FeedHandler fHandler = new FeedHandler();
 
     SharedPreferences.Editor editor;
     String strUrl = "";
@@ -68,8 +68,8 @@ public class MainActivity extends Activity {
         setUpUI();
 
 
-        strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
-        //strUrl = "https://data.sparkfun.com/output/YGbWzd9amwuzd1KwJjDK.json";
+        //strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
+        strUrl = "https://data.sparkfun.com/output/YGbWzd9amwuzd1KwJjDK.json";
 
         swipeLayout.post(new Runnable() {
             @Override
@@ -85,7 +85,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume(){
         super.onResume();
-
     }
 
     @Override
@@ -113,6 +112,16 @@ public class MainActivity extends Activity {
                 Intent wifi = new Intent(getApplicationContext(), SetUpWifi.class);
                 startActivity(wifi);
                 return true;
+            case R.id.refesh:
+                Toast.makeText(getApplicationContext(), "Pull down to refresh" , Toast.LENGTH_SHORT).show();
+                refreshFeed();
+                swipeLayout.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        swipeLayout.setRefreshing(true);
+                    }
+                });
+
         }
         return super.onOptionsItemSelected(item);
     }
@@ -121,10 +130,16 @@ public class MainActivity extends Activity {
         editor.putBoolean("setUp", true).commit();
     }
 
+    private void refreshFeed(){
+        downloadTask = new DownloadTask();
+        strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
+        downloadTask.execute(strUrl);
+    }
+
     private void setUpUI(){
         Log.d(TAG, "setting up ui");
         mListView = (ListView) findViewById(R.id.lv_events);
-        emptyFeed = (ImageView) findViewById(R.id.empty_graphic);
+        emptyFeed = (ImageButton) findViewById(R.id.empty_graphic);
         emptyFeed.setVisibility(View.INVISIBLE);
         imageState = (ImageButton) findViewById(R.id.stateImage);
 
@@ -132,9 +147,7 @@ public class MainActivity extends Activity {
         swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                downloadTask = new DownloadTask();
-                strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
-                downloadTask.execute(strUrl);
+                refreshFeed();
             }
         });
         swipeLayout.setColorScheme(
@@ -146,6 +159,14 @@ public class MainActivity extends Activity {
             imageState.setImageResource(R.drawable.button_off);
         }
 
+        emptyFeed.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                swipeLayout.setRefreshing(true);
+                refreshFeed();
+            }
+        });
+
         imageState.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -153,13 +174,18 @@ public class MainActivity extends Activity {
                 if(settings.getBoolean("armState", false) == true){			//if armed -> disarm
                     imageState.setImageResource(R.drawable.button_off);
                     editor.putBoolean("armState", false).commit();
-                    sendMessage("D");
+                    //sendMessage("D");
+                    //fHandler = new FeedHandler("9364467121", String armed, String alert, String timeStamp)
+                    //fHandler = new FeedHandler("9364467121", "F", "T", "2015-02-27T01:47:00.531Z");
+                    fHandler.updateFeed("9364467121", "F", "T");
                 }
 
                 else{   //disarm -> arm
                     imageState.setImageResource(R.drawable.button_on);
                     editor.putBoolean("armState", true).commit();
-                    sendMessage("A");
+                    //sendMessage("A");
+                    //fHandler = new FeedHandler("9364467121", "T", "T", "2015-02-27T01:47:00.531Z");
+                    fHandler.updateFeed("9364467121", "T", "T");
                 }
             }
         });
@@ -240,8 +266,10 @@ public class MainActivity extends Activity {
                 listViewLoaderTask.execute(result);
             }
 
-            swipeLayout.setRefreshing(false);
-
+            swipeLayout.postDelayed(new Runnable(){
+                public void run() {
+                    swipeLayout.setRefreshing(false);
+                }}, 1200);
         }
     }
 
