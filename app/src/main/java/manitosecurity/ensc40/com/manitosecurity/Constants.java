@@ -35,4 +35,7 @@ public interface Constants {
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
 
+    // Message types sent from the FeedHandler Handler
+    public static final int TOAST_SUCCESS = 6;
+    public static final int TOAST_FAIL = 7;
 }

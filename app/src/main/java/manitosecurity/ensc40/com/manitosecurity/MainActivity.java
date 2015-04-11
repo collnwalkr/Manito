@@ -1,22 +1,28 @@
 package manitosecurity.ensc40.com.manitosecurity;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.v4.widget.SwipeRefreshLayout;
+import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
@@ -29,19 +35,23 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
 
 public class MainActivity extends Activity {
 
     private ImageButton imageState;
-    private ImageView emptyFeed;
+    private ImageButton emptyFeed;
     private ListView mListView;
     private SharedPreferences settings;
-    private Animation slideUp, spin, slideDown;
-    private ImageView mRefreshIcon;
-    private Button mRefreshButton;
+    private SwipeRefreshLayout swipeLayout;
     private DownloadTask downloadTask = new DownloadTask();
+    private FeedHandler fHandler;
+    private Boolean mHOME;
+    private String mPhoneNumber;
+
 
     SharedPreferences.Editor editor;
     String strUrl = "";
@@ -59,6 +69,8 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        fHandler = new FeedHandler(getApplicationContext(), toastHandler);
+
         //GET SHARED PREFERENCES and SET UP EDITOR
         settings = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -71,17 +83,18 @@ public class MainActivity extends Activity {
 
         setUpUI();
 
+        mPhoneNumber = getPhoneNumber();
 
-        //strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
-        strUrl = "https://data.sparkfun.com/output/YGbWzd9amwuzd1KwJjDK.json";
+        setRecurringAlarm(this);
 
+        strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
 
-        // Creating a new non-ui thread task to download json data
-
-        mRefreshButton.setText(R.string.refreshing);
-        mRefreshButton.setBackgroundColor(getResources().getColor(R.color.orange));
-        setAnimationMiddle(spin, mRefreshIcon, false);
-        mRefreshIcon.startAnimation(slideUp);
+        swipeLayout.post(new Runnable() {
+            @Override
+            public void run() {
+                swipeLayout.setRefreshing(true);
+            }
+        });
 
         // Starting the download process
         downloadTask.execute(strUrl);
@@ -90,7 +103,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume(){
         super.onResume();
-
     }
 
     @Override
@@ -118,6 +130,16 @@ public class MainActivity extends Activity {
                 Intent wifi = new Intent(getApplicationContext(), SetUpWifi.class);
                 startActivity(wifi);
                 return true;
+            case R.id.refesh:
+                Toast.makeText(getApplicationContext(), "Pull down to refresh" , Toast.LENGTH_SHORT).show();
+                refreshFeed();
+                swipeLayout.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        swipeLayout.setRefreshing(true);
+                    }
+                });
+
         }
         return super.onOptionsItemSelected(item);
     }
@@ -126,64 +148,75 @@ public class MainActivity extends Activity {
         editor.putBoolean("setUp", true).commit();
     }
 
+    private void refreshFeed(){
+        downloadTask = new DownloadTask();
+        strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
+        downloadTask.execute(strUrl);
+    }
+
     private void setUpUI(){
         Log.d(TAG, "setting up ui");
         mListView = (ListView) findViewById(R.id.lv_events);
-        emptyFeed = (ImageView) findViewById(R.id.empty_graphic);
+        emptyFeed = (ImageButton) findViewById(R.id.empty_graphic);
         emptyFeed.setVisibility(View.INVISIBLE);
         imageState = (ImageButton) findViewById(R.id.stateImage);
-        mRefreshButton = (Button) findViewById(R.id.refresh_button);
-        mRefreshIcon = (ImageView) findViewById(R.id.refresh_icon);
-        mRefreshIcon.setVisibility(View.INVISIBLE);
 
-        setUpButton(mRefreshButton);
+        swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
+        swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                refreshFeed();
+            }
+        });
+        swipeLayout.setColorScheme(
+                R.color.green,
+                R.color.orange,
+                R.color.dark);
 
         if (!settings.getBoolean("armState", false)){		//if setting is off, button should be off
             imageState.setImageResource(R.drawable.button_off);
         }
 
+        emptyFeed.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                swipeLayout.setRefreshing(true);
+                refreshFeed();
+            }
+        });
+
         imageState.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                SharedPreferences.Editor editor = settings.edit();
+                SharedPreferences msettings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                mHOME = getCurrentSsid(getApplicationContext(), msettings);
+                Log.d(TAG, "" + mHOME);
+
                 if(settings.getBoolean("armState", false) == true){			//if armed -> disarm
-                    imageState.setImageResource(R.drawable.button_off);
-                    editor.putBoolean("armState", false).commit();
-                    sendMessage("D");
+                    Toast.makeText(getApplicationContext(), "disarming",
+                            Toast.LENGTH_SHORT).show();
+                    if(mHOME) {
+                        fHandler.updateFeed(mPhoneNumber, "F", "F", "F", "F");
+                    }
+                    else{
+                        fHandler.updateFeed(mPhoneNumber, "F", "F", "T", "F");
+                    }
                 }
 
                 else{   //disarm -> arm
-                    imageState.setImageResource(R.drawable.button_on);
-                    editor.putBoolean("armState", true).commit();
-                    sendMessage("A");
+                    Toast.makeText(getApplicationContext(), "arming",
+                            Toast.LENGTH_SHORT).show();
+                    if(mHOME) {
+                        //updateFeed(String phoneNumber, String armed, String alert, String away, String sleep){
+                            fHandler.updateFeed(mPhoneNumber, "T", "F", "F", "F");
+                    }
+                    else{
+                        fHandler.updateFeed(mPhoneNumber, "T", "F", "T", "F");
+                    }
                 }
             }
         });
 
-        mRefreshButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                // Send a message using content of the edit text widget
-                View view = v.getRootView();
-                if (null != view) {
-                    Log.d(TAG, "refresh button pushed " + strUrl);
-                    mRefreshButton.setText(R.string.refreshing);
-                    mRefreshButton.setBackgroundColor(getResources().getColor(R.color.orange));
-                    setAnimationMiddle(spin, mRefreshIcon, false);
-                    mRefreshIcon.startAnimation(slideUp);
-                    downloadTask = new DownloadTask();
-                    strUrl = "https://data.sparkfun.com/output/5JZO9K83dRU0KlA39EGZ.json";
-                    downloadTask.execute(strUrl);
-                }
-            }
-        });
-
-        //Set up animation
-        slideUp     = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_up);
-        slideDown   = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slide_down);
-        spin        = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.spin);
-        setAnimationEnd(slideDown, mRefreshIcon);
-        setAnimationStart(slideUp, mRefreshIcon);
-        setAnimationMiddle(spin, mRefreshIcon, false);
 
         Log.d(TAG, "set up ui");
     }
@@ -260,8 +293,10 @@ public class MainActivity extends Activity {
                 listViewLoaderTask.execute(result);
             }
 
-
-            setAnimationMiddle(spin, mRefreshIcon, true);
+            swipeLayout.postDelayed(new Runnable(){
+                public void run() {
+                    swipeLayout.setRefreshing(false);
+                }}, 1200);
         }
     }
 
@@ -276,14 +311,14 @@ public class MainActivity extends Activity {
             try{
                 jObject = new JSONObject(strJson[0]);
                 Log.d(TAG, "made the jObject");
-                feedJSONParser eventJsonParser = new feedJSONParser();
+                feedJSONParser eventJsonParser = new feedJSONParser(getApplicationContext());
                 eventJsonParser.parse(jObject);
             }catch(Exception e){
                 Log.d("JSON Exception1",e.toString());
             }
 
             // Instantiating json parser class
-            feedJSONParser eventJsonParser = new feedJSONParser();
+            feedJSONParser eventJsonParser = new feedJSONParser(getApplicationContext());
 
             // A list object to store the parsed events list
             List<HashMap<String, Object>> events = null;
@@ -296,12 +331,10 @@ public class MainActivity extends Activity {
             }
 
             // Keys used in Hashmap
-            //String[] from = { "name","timestamp","armed", "home", "alert"};
-            String[] from = { "timestamp","armed", "armed_img", "date", "separate"};
+            String[] from = {"timestamp","armed", "armed_img", "date", "home_img", "home", "name"};
 
             // Ids of views in listview_layout
-            //int[] to = { R.id.contact_name_text, R.id.contact_time_text, R.id.contact_armed_text, R.id.contact_home_text};
-            int[] to = { R.id.contact_time_text, R.id.contact_armed_text, R.id.contact_armed_picture, R.id.date};
+            int[] to = { R.id.contact_time_text, R.id.contact_armed_text, R.id.contact_armed_picture, R.id.date, R.id.contact_home_picture, R.id.contact_home_text, R.id.contact_name_text};
 
             // Instantiating an adapter to store each items
             // R.layout.listview_layout defines the layout of each item
@@ -360,6 +393,41 @@ public class MainActivity extends Activity {
         }
     };
 
+
+    private final Handler toastHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            SharedPreferences msettings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            SharedPreferences.Editor meditor = msettings.edit();
+
+            Log.d(TAG, "handler: " + msettings.getBoolean("armState", false));
+
+            switch (msg.what) {
+                case Constants.TOAST_FAIL:
+                    Toast.makeText(getApplicationContext(), "There was an error",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case Constants.TOAST_SUCCESS:
+                    if(msettings.getBoolean("armState", false) == false) {
+                        imageState.setImageResource(R.drawable.button_on);
+                        meditor.putBoolean("armState", true).commit();
+
+                        Toast.makeText(getApplicationContext(), "Succesfully armed",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    else{
+                        imageState.setImageResource(R.drawable.button_off);
+                        meditor.putBoolean("armState", false).commit();
+
+                        Toast.makeText(getApplicationContext(), "Succesfully disarmed",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    refreshFeed();
+                    break;
+            }
+        }
+    };
+
     /**
      * Sends a message.
      *
@@ -383,64 +451,61 @@ public class MainActivity extends Activity {
         }
     }
 
-    /**
-     * Set up Refresh Button
-     */
-    private void setUpButton(Button b){
-        b.setText(R.string.refresh);
-        b.setTextColor(getResources().getColor(R.color.white));
-        b.setBackgroundColor(getResources().getColor(R.color.green));
-    }
+    public static Boolean getCurrentSsid(Context context, SharedPreferences settings) {
+        String ssid = "";
+        String mySSID = settings.getString("WiFiName", "");
+        Log.d("getCurrentSSID", "mySSID " + mySSID);
+        Boolean home = false;
 
+        ConnectivityManager connManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
 
-    private void setAnimationStart(Animation anim, final ImageView v){
-        anim.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-                v.setVisibility(View.VISIBLE);
-            }
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                v.startAnimation(spin);
-            }
+        NetworkInfo networkInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
 
+        if (networkInfo.isConnected()) {
+            final WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            final WifiInfo connectionInfo = wifiManager.getConnectionInfo();
+            if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.getSSID())) {
+                ssid = connectionInfo.getSSID().toString();
+                ssid = ssid.replace("\"", "");
+                Log.d("getCurrentSSID", ssid + " " + mySSID);
+                Log.d("getCurrentSSID", mySSID.equals(ssid) + "");
 
-        });
-    }
-    //Repeat animation, then slide down if done
-    private void setAnimationMiddle(Animation anim, final ImageView v, final boolean finished){
-        anim.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-            @Override
-            public void onAnimationStart(Animation animation) {}
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                if(finished){
-                    v.getAnimation().cancel();
-                    v.startAnimation(slideDown);
+                if(mySSID.equals(ssid)){
+                    home = true;
                 }
-                else
-                    v.startAnimation(spin);
             }
-
-        });
+            else {
+                home = false;
+            }
+        }
+        return home;
     }
 
-    private void setAnimationEnd(Animation anim, final ImageView v){
-        anim.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {}
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                v.setVisibility(View.INVISIBLE);
-                setUpButton(mRefreshButton);
-            }
-        });
+    private String getPhoneNumber(){
+        TelephonyManager tMgr = (TelephonyManager)getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+        String mPhoneNumber = tMgr.getLine1Number();
+
+        Log.d(TAG, "phone number " + mPhoneNumber);
+
+        return mPhoneNumber;
     }
 
+    private void setRecurringAlarm(Context context) {
+
+        Calendar updateTime = Calendar.getInstance();
+        updateTime.setTimeZone(TimeZone.getDefault());
+        //updateTime.add(Calendar.MINUTE, 1);
+        Intent downloader = new Intent(context, CheckForAlertReceiver.class);
+        downloader.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, downloader, PendingIntent.FLAG_CANCEL_CURRENT);
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        //set to every 2 minutes
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, updateTime.getTimeInMillis(), 1 * 60 * 1000, pendingIntent);
+
+        Log.d(TAG, "Set alarmManager.setRepeating to: " + updateTime.getTime());
+
+    }
 }
