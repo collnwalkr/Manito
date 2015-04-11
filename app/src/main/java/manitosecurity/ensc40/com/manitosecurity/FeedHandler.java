@@ -1,6 +1,8 @@
 package manitosecurity.ensc40.com.manitosecurity;
 
+import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.util.Log;
 
 import org.apache.http.HttpResponse;
@@ -23,11 +25,20 @@ import java.util.List;
 public class FeedHandler {
 
     static String TAG = "FeedHandler";
-    private String mPhoneNumber, mArmed, mAlert = "";
+    private String mPhoneNumber, mArmed, mAlert, mAway, mSleep = "";
     private String privateKey = "7BMDzNyXeAf0Kl25JoW1";
     private String publicKey = "5JZO9K83dRU0KlA39EGZ";
     private String path = "http://data.sparkfun.com/input/" + publicKey;
     private List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(4);
+    private final Handler mHandler;
+
+    public static Context mcontext;
+
+
+    public FeedHandler(Context c, Handler handler){
+        mcontext = c;
+        mHandler = handler;
+    }
 
 
     public void updateFeedASYNC(){
@@ -36,6 +47,8 @@ public class FeedHandler {
         nameValuePairs.add(new BasicNameValuePair("phone", mPhoneNumber));
         nameValuePairs.add(new BasicNameValuePair("alert", mAlert));
         nameValuePairs.add(new BasicNameValuePair("armed", mArmed));
+        nameValuePairs.add(new BasicNameValuePair("away", mAway));
+        nameValuePairs.add(new BasicNameValuePair("sleep", mSleep));
 
         try{
             Log.d(TAG, "Trying makeRequest");
@@ -45,10 +58,12 @@ public class FeedHandler {
         }
     }
 
-    public void updateFeed(String phoneNumber, String armed, String alert){
+    public void updateFeed(String phoneNumber, String armed, String alert, String away, String sleep){
         mPhoneNumber = phoneNumber;
         mArmed = armed;
         mAlert = alert;
+        mAway = away;
+        mSleep = sleep;
 
         Log.d(TAG, "updateFEED:" + mAlert + mPhoneNumber);
 
@@ -79,12 +94,16 @@ public class FeedHandler {
         inputStream = httpResponse.getEntity().getContent();
 
         //convert inputstream to string
-        if(inputStream != null)
-            result = convertInputStreamToString(inputStream);
-        else
+        if(inputStream != null) {
+                result = convertInputStreamToString(inputStream);
+                mHandler.obtainMessage(Constants.TOAST_SUCCESS, -1).sendToTarget();
+            }
+            else {
             result = "Did not work!";
+            mHandler.obtainMessage(Constants.TOAST_FAIL,  -1).sendToTarget();
+        }
 
-        Log.d(TAG, result);
+        //Log.d(TAG, result);
     }
 
 
@@ -109,7 +128,6 @@ public class FeedHandler {
         // onPostExecute displays the results of the AsyncTask.
         @Override
         protected void onPostExecute(String result) {
-            //Toast.makeText(getBaseContext(), "Data Sent!", Toast.LENGTH_LONG).show();
         }
     }
 

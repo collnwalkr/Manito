@@ -11,6 +11,7 @@
 
     <!-- Menu Items -->
     <string name="action_settings">Settings</string>
+    <string name="action_setup">Set Up</string>
     <string name="developer_setting">Developer Mode</string>
     <string name="wifi_detection">Wifi Detection</string>
     <string name="refresh">Refresh</string>

@@ -1,11 +1,17 @@
 package manitosecurity.ensc40.com.manitosecurity;
 
+import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.ContactsContract;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.DateFormatSymbols;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +25,13 @@ import java.util.concurrent.TimeUnit;
 public class feedJSONParser {
 
     String TAG = "feedJSONParser";
+    private Context mContext;
+    private String mPhoneNumber;
+
+    public feedJSONParser(Context c){
+        mContext = c;
+        mPhoneNumber = getPhoneNumber();
+    }
 
     // Receives a JSONObject and returns a list
     public List<HashMap<String, Object>> parse(JSONObject jObject) {
@@ -67,22 +80,39 @@ public class feedJSONParser {
         String  m_time  = "";
         String  b_arm   = "";
         String  m_arm   = "";
-        String  m_home  = "";
+        String  b_away  = "";
+        String  m_away  = "";
+        String  b_sleep  = "";
         String  b_alert = "";
         String  m_alert = "";
         String  d_arm   = null;
+        String  d_away  = null;
         String  m_date  = "";
+        String  m_month  = "";
         Boolean separate = false;
         String  m_lastDate = "";
 
         try {
-            //m_name = jEvent.getString("name");
+            m_name = jEvent.getString("phone");
+            m_name = getContactName(mContext, m_name);
             m_time_stamp   = jEvent.getString("timestamp");
             m_time         = m_time_stamp.substring(11, 16);
-            m_date         = m_time_stamp.substring(0, 10);
+            m_date         = m_time_stamp.substring(8, 10);
+            m_month        = m_time_stamp.substring(5, 7);
+            //Log.d(TAG, m_date + " " + m_month);
 
-            m_time = to_CivilianTime(m_time);
+            b_away         = jEvent.getString("away");
+            b_sleep        = jEvent.getString("sleep");
 
+            String[] time = {m_time, m_date};
+            time = to_CivilianTime(time);
+            m_time = time[0];
+            m_date = time[1];
+            m_month = getMonth(Integer.parseInt(m_month));
+            //Log.d(TAG, m_date + " " + m_month);
+
+
+            m_date = m_month + " " + m_date;
 
             if(m_lastDate == m_date){
                 separate = false;
@@ -99,7 +129,15 @@ public class feedJSONParser {
                 m_arm = "Disarmed";
                 d_arm = String.valueOf(R.drawable.armed_off);
             }
-            //m_home = jEvent.getString("home");
+
+            if(b_away.equals("T")){
+                d_away = String.valueOf(R.drawable.home_off);
+                m_away = "Away";
+            } else{
+                m_away = "Home";
+                d_away = String.valueOf(R.drawable.home_on);
+            }
+
             b_alert  = jEvent.getString("alert");
             if(b_alert.equals("T")){
                 m_alert = "Armed";
@@ -115,6 +153,9 @@ public class feedJSONParser {
             event.put("armed_img", d_arm);
             event.put("date", m_date);
             event.put("separate", separate);
+            event.put("home_img", d_away);
+            event.put("home", m_away);
+            event.put("name", m_name);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -124,18 +165,18 @@ public class feedJSONParser {
         return event;
     }
 
-    private String to_CivilianTime(String time){
+    private String[] to_CivilianTime(String[] time){
+        Integer i_day = Integer.parseInt(time[1]);
         StringBuilder time_finished = new StringBuilder();
-        String s_hours = time.substring(0, 2);
+        String s_hours = time[0].substring(0, 2);
 
         TimeZone tZone = TimeZone.getDefault();
+
 
         long daylightSaving = tZone.getDSTSavings();
         daylightSaving = TimeUnit.HOURS.convert(daylightSaving, TimeUnit.MILLISECONDS);
 
         long offset = tZone.getRawOffset();
-        Log.d(TAG, "" + offset);
-        Log.d(TAG, "" + TimeUnit.HOURS.convert(offset, TimeUnit.MILLISECONDS));
         offset = TimeUnit.HOURS.convert(offset, TimeUnit.MILLISECONDS);
 
         int i_hours = Integer.parseInt(s_hours);
@@ -143,10 +184,10 @@ public class feedJSONParser {
         i_hours += offset;
         i_hours += daylightSaving;
 
-        Log.d(TAG, "Final i_hours:" + i_hours);
 
         if(i_hours <= 0){
             i_hours += 24;
+            i_day = Integer.parseInt(time[1]) - 1;
         }
 
         if(i_hours >= 24){
@@ -159,15 +200,65 @@ public class feedJSONParser {
                 time_finished.append("0");}
             time_finished.append(i_hours);
             time_finished.append(":");
-            time_finished.append(time.substring(3));
+            time_finished.append(time[0].substring(3));
             time_finished.append(" pm");
         }else{
-            time_finished.append(time);
+            time_finished.append(i_hours);
+            time_finished.append(":");
+            time_finished.append(time[0].substring(3));
             time_finished.append(" am");
         }
 
-        Log.d(TAG, "Final Time:" + time_finished.toString());
+        time[1] = i_day.toString();
+        //Log.d(TAG, "!!!!!!!" + time[0] + " " + time[1]);
 
-        return time_finished.toString();
+        time[0] = time_finished.toString();
+
+        return time;
+    }
+
+    private String getContactName(Context context, String number) {
+        //Log.d(TAG, "Trying to find it" + number);
+
+        String name = null;
+        // define the columns I want the query to return
+        String[] projection = new String[] {
+                ContactsContract.PhoneLookup.DISPLAY_NAME,
+                ContactsContract.PhoneLookup._ID};
+
+        // encode the phone number and build the filter URI
+        Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
+
+        // query time
+        Cursor cursor = context.getContentResolver().query(contactUri, projection, null, null, null);
+
+        if(cursor != null) {
+            if (cursor.moveToFirst()) {
+                name =      cursor.getString(cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
+                //Log.d(TAG, "Started uploadcontactphoto: Contact Found @ " + number);
+                //Log.d(TAG, "Started uploadcontactphoto: Contact name  = " + name);
+            } else {
+                //Log.d(TAG, "Contact Not Found @ " + number);
+                if(number.equals(mPhoneNumber)){
+                    name = "You";
+                }
+            }
+            cursor.close();
+        }
+        return name;
+    }
+
+    private String getPhoneNumber(){
+        TelephonyManager tMgr = (TelephonyManager)mContext.getSystemService(Context.TELEPHONY_SERVICE);
+        String mPhoneNumber = tMgr.getLine1Number();
+
+        //Log.d(TAG, "phone numbr " + mPhoneNumber);
+
+        return mPhoneNumber;
+    }
+
+    public String getMonth(int month) {
+
+        return new DateFormatSymbols().getMonths()[month-1];
     }
 }
